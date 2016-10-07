@@ -1,121 +1,104 @@
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.HashSet;
 import java.util.Scanner;
 
-public class Main {
-
+public class TimetableExchange 
+{
 	public static void main(String[] args) 
 	{
-		ArrayList<Vertex> persons = readData();
-		
-		Vertex.connectPeople(persons); //create digraph on termins
-		Vertex.clean(persons); //remove people with no chances for success
-		
-		for(Vertex a : persons) System.out.println(a.toString()); //echo cleared input
-		
-		ArrayList<ArrayList<Vertex>> components = splitToComponents(persons); //split digraphg on connected components
-		
-		System.out.println("---------------------------------------------");
-		System.out.println("Number of connected components: " + components.size());
-		
-		int componentId = 0;
-		for(ArrayList<Vertex> a : components) //do for every component
-		{
-			Vertex.sortInComp(a, componentId); //add local ids in this component	
-			
-			System.out.println("---------------------------------------------");
-			System.out.println("Number of vertex in this component: "+ a.size());
-
-			int[] result = new HungarianAlgorithm(Vertex.getMatrix(a)).execute();
-			
-			int success = 0;
-	        for(int i = 0; i < result.length; i++) //echo results
-	        {
-	        	//we need to convert from local ids to global ones
-	        	Vertex v = Vertex.findVertexByLocalID(a, i);
-	        	Vertex u = Vertex.findVertexByLocalID(a, result[i]);
-	        	
-	        	v.newTermin = u.myTermin;
-	        	
-	        	int fromId = v.id;
-	        	int toId = u.id;
-	        	
-	        	if(fromId != toId)
-	        	{
-	        		System.out.println(fromId + " -> " + toId);
-	        		success++;
-	        	}
-	        }
-			System.out.println("Success: " + success );
-			componentId++;
-		}
-		
-		for(Vertex a : persons) System.out.println(a.toString()); //echo cleared input
-	}
-	
-	
-	private static ArrayList<Vertex> readData() 
-	{
+		/**
+		 * Read data in format:
+		 * number_of_peoples
+		 * my_termin number_of_wanted_termins termin1 termin2...
+		 * ...
+		 */
 		Scanner sc = new Scanner(System.in);
 		
-		int stPeople = sc.nextInt();
+		int n = sc.nextInt(); //numbers of students
+		Vertex students[] = new Vertex[n];
 		
-		ArrayList<Vertex> persons = new ArrayList<Vertex>();
-		for(int i = 0; i < stPeople; i++)
+		for(int i = 0; i < n; i++)
 		{
-			//int index = sc.nextInt();
-			int owned = sc.nextInt();
-			int stWishes = sc.nextInt();
+			int termin = sc.nextInt();
+			int nWishes = sc.nextInt();
 			
-			ArrayList<Integer> wishes = new ArrayList<Integer>();
-			
-			for(int j = 0; j < stWishes; j++)
+			HashSet<Integer> wishes = new HashSet<Integer>();
+			for(int j = 0; j < nWishes; j++)
 			{
 				wishes.add(sc.nextInt());
 			}
-			//persons.add(new Vertex(index, owned, wishes));
-			persons.add(new Vertex(i, owned, wishes));
+			students[i] = new Vertex(termin, wishes);
 		}
 		sc.close();
-		return persons;
-	}
-
-	private static ArrayList<ArrayList<Vertex>> splitToComponents(ArrayList<Vertex> persons)
-	{
-		ArrayList<ArrayList<Vertex>> components = new ArrayList<ArrayList<Vertex>>();
-
-		int StObdelanih = 0;
-		Queue<Vertex> queue = new LinkedList<Vertex>();
-		while(StObdelanih < persons.size())
+		
+		/**
+		 *  Calculate matrix
+		 */
+		long startTime = System.nanoTime();
+		double matrix[][] = new double[n][n]; //default contains only zeros
+		
+		for (int i = 0; i < n; i++)
 		{
-			ArrayList<Vertex> current = new ArrayList<Vertex>();
-			queue.clear();
-			
-			for(Vertex a : persons) //najdemo prvega nepovezanega
+			//working with students[i]
+			for(int j = 0; j < n; j++)
 			{
-				if(!a.visited)
-				{
-					queue.add(a);
-					break;
+				//comparing to students[j]
+				if (i == j){
+					matrix[i][i] = 1; //we can keep termin
+					continue;
 				}
-			}
-			
-			while(!queue.isEmpty()) //prehodimo komponento
-			{
-				Vertex element = queue.poll();
-				element.visited = true;
-				StObdelanih++;
-				current.add(element);
+								
+				boolean canConnect = false;
+				for(int wish : students[i].wishes)
+				{
+					if(wish == students[j].termin)
+					{
+						canConnect = true;
+						break;
+					}
+				}
 				
-				for(Vertex child : element.connectedTo)
+				if(!canConnect)
 				{
-					if(!child.visited && !queue.contains(child)) queue.add(child);
+					matrix[i][j] = n+1; //cannot exchange
 				}
 			}
-			components.add(current);
 		}
-
-		return components;
+		//printMatrix(matrix);
+		
+		/**
+		 * Student i will exchange his termin with student result[i]
+		 */
+		int result[] = new Hungarian(matrix).execute();
+		
+		long endTime = System.nanoTime();
+		System.out.println("Took "+(endTime - startTime) + " ns"); 
+		
+		//System.out.println(Arrays.toString(result));
+		int success = 0;
+		for (int i = 0; i < n; i++)
+		{
+			if(result[i] != i)
+			{
+				System.out.println(i + " -> " + students[i].wishes.toString()+ " " + students[result[i]].termin);
+				success++;
+			}
+		}
+		System.out.println("Success: " + success);
+	}
+	
+	/**
+	 * Debug method to print out nxn matrix after establish connections
+	 * @param matrix
+	 */
+	private static void printMatrix(double[][] matrix) 
+	{
+		for (int i = 0; i < matrix.length; i++)
+		{
+			for (int j = 0; j < matrix[i].length; j++)
+			{
+				System.out.print(matrix[i][j] + " ");
+			}
+			System.out.println();
+		}
 	}
 }

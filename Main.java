@@ -1,7 +1,7 @@
 import java.util.HashSet;
 import java.util.Scanner;
 
-public class TimetableExchange 
+public class Main 
 {
 	public static void main(String[] args) 
 	{

@@ -45,7 +45,7 @@ import java.util.Arrays;
  *
  * @author Kevin L. Stern
  */
-public class HungarianAlgorithm {
+public class Hungarian {
     private final double[][] costMatrix;
     private final int rows, cols, dim;
     private final double[] labelByWorker, labelByJob;
@@ -63,7 +63,7 @@ public class HungarianAlgorithm {
      *          worker i to job j, for all i, j. The cost matrix must not be
      *          irregular in the sense that all rows must be the same length.
      */
-    public HungarianAlgorithm(double[][] costMatrix) {
+    public Hungarian(double[][] costMatrix) {
         this.dim = Math.max(costMatrix.length, costMatrix[0].length);
         this.rows = costMatrix.length;
         this.cols = costMatrix[0].length;
